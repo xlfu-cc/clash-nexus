@@ -1,0 +1,35 @@
+{
+  "name": "clash-nexus",
+  "version": "1.0.0",
+  "description": "A lightweight Clash subscription management service",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "node server/index.js",
+    "dev:watch": "node --watch server/index.js",
+    "dev:web": "cd web && npm run dev",
+    "build:web": "cd web && npm run build",
+    "start": "NODE_ENV=production node server/index.js",
+    "format": "prettier --write \"server/**/*.js\" \"web/src/**/*.{js,vue,css}\"",
+    "format:check": "prettier --check \"server/**/*.js\" \"web/src/**/*.{js,vue,css}\""
+  },
+  "keywords": [
+    "clash",
+    "subscription",
+    "proxy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "js-yaml": "^4.1.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

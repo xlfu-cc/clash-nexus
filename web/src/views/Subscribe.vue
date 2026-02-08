@@ -12,16 +12,17 @@
         <label class="form-label">选择 Profile</label>
         <select class="form-input" v-model="selectedProfile">
           <option value="">不指定 (返回公共配置)</option>
-          <option v-for="profile in profiles" :key="profile.id" :value="profile.name">
-            {{ profile.name }} - {{ profile.description }}
-          </option>
+          <option v-for="name in profiles" :key="name" :value="name">{{ name }}</option>
         </select>
       </div>
 
       <div class="form-group">
         <label class="form-label">订阅 Token</label>
-        <input type="text" class="form-input" v-model="token" placeholder="输入你的订阅 Token" />
-        <p class="form-hint">Token 配置在服务端的 SUBSCRIBE_TOKEN 环境变量中</p>
+        <div class="flex gap-sm">
+          <input type="text" class="form-input" v-model="token" readonly placeholder="加载中..." />
+          <button class="btn btn-secondary" @click="refreshToken" title="刷新 Token">🔄</button>
+        </div>
+        <p class="form-hint">Token 由系统自动生成，刷新后旧链接将失效</p>
       </div>
 
       <div class="subscribe-url-section">
@@ -39,16 +40,15 @@
       <h2 class="card-title">快速链接</h2>
       <p class="text-muted mb-md">以下是各 Profile 的订阅链接（需要替换 Token）：</p>
 
-      <div v-for="profile in profiles" :key="profile.id" class="quick-link-item">
+      <div v-for="name in profiles" :key="name" class="quick-link-item">
         <div class="quick-link-info">
-          <code>{{ profile.name }}</code>
-          <span class="text-muted">{{ profile.description }}</span>
+          <code>{{ name }}</code>
         </div>
-        <button class="copy-btn" @click="copyProfileUrl(profile.name)">复制</button>
+        <button class="copy-btn" @click="copyProfileUrl(name)">复制</button>
       </div>
 
       <div v-if="profiles.length === 0" class="empty-state">
-        <p>暂无 Profile，请先在 Profile 管理中创建</p>
+        <p>暂无 Profile，请先在「配置管理」中使用 <code># @profile: 名称</code> 标记</p>
       </div>
     </div>
 
@@ -84,8 +84,9 @@
 </template>
 
 <script>
-import { ref, computed, inject, onMounted } from 'vue'
-import { profileApi, generateSubscribeUrl } from '../api'
+import { computed, inject, onMounted, ref } from 'vue'
+import { generateSubscribeUrl, profileApi, subscribeApi } from '../api'
+import { copyToClipboard } from '../utils/clipboard'
 
 export default {
   name: 'Subscribe',
@@ -93,35 +94,67 @@ export default {
     const showToast = inject('showToast')
     const profiles = ref([])
     const selectedProfile = ref('')
-    const token = ref('dev-subscribe-token')
+    const token = ref('')
 
     const subscribeUrl = computed(() => {
       return generateSubscribeUrl(selectedProfile.value, token.value)
     })
 
-    const loadProfiles = async () => {
+    const loadData = async () => {
       try {
-        profiles.value = await profileApi.list()
+        const [profilesData, tokenData] = await Promise.all([profileApi.list(), subscribeApi.getToken()])
+        profiles.value = profilesData
+        token.value = tokenData.token
       } catch (error) {
         showToast(error.message, 'error')
       }
     }
 
-    const copyUrl = async () => {
+    const refreshToken = async () => {
+      if (!confirm('确定要重置订阅 Token 吗？旧的订阅链接将失效。')) return
+
       try {
-        await navigator.clipboard.writeText(subscribeUrl.value)
-        showToast('链接已复制到剪贴板')
+        const data = await subscribeApi.rotateToken()
+        token.value = data.token
+        showToast('订阅 Token 已刷新')
       } catch (error) {
-        showToast('复制失败，请手动复制', 'error')
+        showToast('Token 刷新失败', 'error')
+      }
+    }
+
+    const copyUrl = async () => {
+      if (!token.value) {
+        showToast('数据尚未加载完成', 'warn')
+        return
+      }
+      try {
+        const success = await copyToClipboard(subscribeUrl.value)
+        if (success) {
+          showToast('链接已复制到剪贴板')
+        } else {
+          showToast('复制失败，请尝试手动复制', 'error')
+        }
+      } catch (error) {
+        console.error('Clipboard error:', error)
+        showToast('复制失败', 'error')
       }
     }
 
     const copyProfileUrl = async profileName => {
+      if (!token.value) {
+        showToast('数据尚未加载完成', 'warn')
+        return
+      }
       const url = generateSubscribeUrl(profileName, token.value)
       try {
-        await navigator.clipboard.writeText(url)
-        showToast(`${profileName} 链接已复制`)
+        const success = await copyToClipboard(url)
+        if (success) {
+          showToast(`${profileName} 链接已复制`)
+        } else {
+          showToast('复制失败', 'error')
+        }
       } catch (error) {
+        console.error('Clipboard error:', error)
         showToast('复制失败', 'error')
       }
     }
@@ -130,7 +163,7 @@ export default {
       window.open(subscribeUrl.value, '_blank')
     }
 
-    onMounted(loadProfiles)
+    onMounted(loadData)
 
     return {
       profiles,
@@ -139,7 +172,8 @@ export default {
       subscribeUrl,
       copyUrl,
       copyProfileUrl,
-      openPreview
+      openPreview,
+      refreshToken
     }
   }
 }

@@ -1,18 +1,15 @@
-/**
- * Subscribe Service
- * Generates subscription content for Clash clients
- */
-const yaml = require('js-yaml')
-const configService = require('./configService')
-const providerService = require('./providerService')
-const { parseByProfile } = require('./yamlParser')
+import yaml from 'js-yaml'
+import * as configService from './configService.js'
+import * as providerService from './providerService.js'
+import { parseByProfile } from './yamlParser.js'
+import logger from '../utils/logger.js'
 
 /**
  * Generate subscription content for a specific profile
  * @param {string} profile - Profile name
  * @returns {string} - YAML content for Clash
  */
-async function generateSubscription(profile) {
+export async function generateSubscription(profile) {
   // Get active config
   const config = await configService.getActiveConfig()
   if (!config) {
@@ -33,33 +30,67 @@ async function generateSubscription(profile) {
     throw new Error(`Invalid YAML configuration: ${error.message}`)
   }
 
-  // Merge proxies from providers
+  // Process inline proxy-providers
   try {
-    const providerProxies = await providerService.getAllProviderProxies()
-    if (providerProxies.length > 0) {
+    const proxyProviders = parsed['proxy-providers'] || {}
+    const providerNames = Object.keys(proxyProviders)
+
+    if (providerNames.length > 0) {
       parsed.proxies = parsed.proxies || []
-      parsed.proxies.push(...providerProxies)
 
-      // Update proxy-groups to include new proxies
-      if (parsed['proxy-groups']) {
-        const proxyNames = providerProxies.map(p => p.name)
+      // Map to track which provider provided which proxies
+      const providerToProxies = {}
 
-        for (const group of parsed['proxy-groups']) {
-          // Add to groups that have a 'proxies' field (not url-based)
-          if (group.proxies && Array.isArray(group.proxies)) {
-            // Add after existing proxies but before special values like DIRECT/REJECT
-            const specialValues = ['DIRECT', 'REJECT']
-            const regularProxies = group.proxies.filter(p => !specialValues.includes(p))
-            const specialProxies = group.proxies.filter(p => specialValues.includes(p))
+      // Fetch and expand all providers
+      for (const name of providerNames) {
+        const provider = proxyProviders[name]
+        if (provider.type === 'http' && provider.url) {
+          logger.info(`Processing inline provider: ${name}`)
+          const proxies = await providerService.getProxiesFromProviderUrl(provider.url, name, provider.interval)
+          logger.debug(`Got ${proxies.length} proxies from ${name}`)
 
-            group.proxies = [...regularProxies, ...proxyNames, ...specialProxies]
+          if (proxies.length > 0) {
+            parsed.proxies.push(...proxies)
+            providerToProxies[name] = proxies.map(p => p.name)
           }
         }
       }
+
+      // Update proxy-groups to expand provider references
+      if (parsed['proxy-groups']) {
+        for (const group of parsed['proxy-groups']) {
+          if (group.use && Array.isArray(group.use)) {
+            // Expand 'use' fields
+            const expandedProxies = []
+            const remainingUses = []
+
+            for (const useName of group.use) {
+              if (providerToProxies[useName]) {
+                expandedProxies.push(...providerToProxies[useName])
+              } else {
+                remainingUses.push(useName)
+              }
+            }
+
+            // Update group proxies
+            group.proxies = group.proxies || []
+            group.proxies = [...group.proxies, ...expandedProxies]
+
+            // Update uses (keep valid ones that weren't expanded found in providers)
+            group.use = remainingUses
+            if (group.use.length === 0) {
+              delete group.use
+            }
+          }
+        }
+      }
+
+      // Remove proxy-providers from output to avoid client re-fetching
+      delete parsed['proxy-providers']
     }
   } catch (error) {
-    console.error('Failed to merge provider proxies:', error.message)
-    // Continue without provider proxies
+    logger.error(`Failed to process inline providers: ${error.message}`)
+    // Continue with partial results
   }
 
   // Convert back to YAML
@@ -68,8 +99,4 @@ async function generateSubscription(profile) {
     lineWidth: -1, // Don't wrap lines
     noRefs: true
   })
-}
-
-module.exports = {
-  generateSubscription
 }

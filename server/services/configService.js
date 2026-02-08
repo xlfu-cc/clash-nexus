@@ -1,14 +1,11 @@
-/**
- * Config Service
- * Manages YAML configuration files
- */
-const { v4: uuidv4 } = require('uuid')
-const { readData, writeData } = require('../utils/fileStore')
+import { v4 as uuidv4 } from 'uuid'
+import { readData, updateData } from '../utils/fileStore.js'
+import logger from '../utils/logger.js'
 
 /**
  * Get all configs
  */
-async function getAllConfigs() {
+export async function getAllConfigs() {
   const data = await readData('configs')
   return data?.configs || []
 }
@@ -16,7 +13,7 @@ async function getAllConfigs() {
 /**
  * Get config by ID
  */
-async function getConfigById(id) {
+export async function getConfigById(id) {
   const configs = await getAllConfigs()
   return configs.find(c => c.id === id)
 }
@@ -24,7 +21,7 @@ async function getConfigById(id) {
 /**
  * Get active config
  */
-async function getActiveConfig() {
+export async function getActiveConfig() {
   const configs = await getAllConfigs()
   return configs.find(c => c.isActive) || configs[0]
 }
@@ -32,97 +29,106 @@ async function getActiveConfig() {
 /**
  * Create new config
  */
-async function createConfig(name, content) {
-  const data = await readData('configs')
-  const configs = data?.configs || []
+export async function createConfig(name, content) {
+  let createdConfig
 
-  const newConfig = {
-    id: uuidv4(),
-    name,
-    content,
-    isActive: configs.length === 0, // First config is active by default
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
+  await updateData('configs', data => {
+    const configs = data?.configs || []
 
-  configs.push(newConfig)
-  await writeData('configs', { configs })
+    createdConfig = {
+      id: uuidv4(),
+      name,
+      content,
+      isActive: configs.length === 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
-  return newConfig
+    configs.push(createdConfig)
+    return { ...data, configs }
+  })
+
+  logger.info(`Config created: ${name} (${createdConfig.id})`)
+  return createdConfig
 }
 
 /**
  * Update config
  */
-async function updateConfig(id, updates) {
-  const data = await readData('configs')
-  const configs = data?.configs || []
+export async function updateConfig(id, updates) {
+  let updatedConfig
 
-  const index = configs.findIndex(c => c.id === id)
-  if (index === -1) {
-    throw new Error('Config not found')
-  }
+  await updateData('configs', data => {
+    const configs = data?.configs || []
+    const config = configs.find(c => c.id === id)
 
-  configs[index] = {
-    ...configs[index],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  }
+    if (!config) {
+      throw new Error('Config not found')
+    }
 
-  await writeData('configs', { configs })
-  return configs[index]
+    Object.assign(config, updates, {
+      updatedAt: new Date().toISOString()
+    })
+
+    updatedConfig = config
+    return { ...data, configs }
+  })
+
+  logger.info(`Config updated: ${updatedConfig.name} (${id})`)
+  return updatedConfig
 }
 
 /**
  * Delete config
  */
-async function deleteConfig(id) {
-  const data = await readData('configs')
-  const configs = data?.configs || []
+export async function deleteConfig(id) {
+  await updateData('configs', data => {
+    let configs = data?.configs || []
+    const configToDelete = configs.find(c => c.id === id)
 
-  const index = configs.findIndex(c => c.id === id)
-  if (index === -1) {
-    throw new Error('Config not found')
-  }
+    if (!configToDelete) {
+      throw new Error('Config not found')
+    }
 
-  const wasActive = configs[index].isActive
-  configs.splice(index, 1)
+    const wasActive = configToDelete.isActive
+    configs = configs.filter(c => c.id !== id)
 
-  // If deleted config was active, make first remaining config active
-  if (wasActive && configs.length > 0) {
-    configs[0].isActive = true
-  }
+    if (wasActive && configs.length > 0) {
+      configs[0].isActive = true
+    }
 
-  await writeData('configs', { configs })
+    return { ...data, configs }
+  })
+  logger.info(`Config deleted: ${id}`)
 }
 
 /**
  * Set config as active
  */
-async function setActiveConfig(id) {
-  const data = await readData('configs')
-  const configs = data?.configs || []
+export async function setActiveConfig(id) {
+  let activeConfig
 
-  const targetIndex = configs.findIndex(c => c.id === id)
-  if (targetIndex === -1) {
-    throw new Error('Config not found')
-  }
+  await updateData('configs', data => {
+    const configs = data?.configs || []
+    let found = false
 
-  // Deactivate all, activate target
-  configs.forEach((c, i) => {
-    c.isActive = i === targetIndex
+    configs.forEach(c => {
+      if (c.id === id) {
+        c.isActive = true
+        activeConfig = c
+        found = true
+      } else {
+        c.isActive = false
+      }
+    })
+
+    if (!found) {
+      throw new Error('Config not found')
+    }
+
+    return { ...data, configs }
   })
 
-  await writeData('configs', { configs })
-  return configs[targetIndex]
-}
-
-module.exports = {
-  getAllConfigs,
-  getConfigById,
-  getActiveConfig,
-  createConfig,
-  updateConfig,
-  deleteConfig,
-  setActiveConfig
+  logger.info(`Config activated: ${activeConfig.name} (${id})`)
+  return activeConfig
 }

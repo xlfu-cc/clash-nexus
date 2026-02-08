@@ -1,15 +1,29 @@
-/**
- * Config Routes
- * CRUD operations for YAML configurations
- */
-const express = require('express')
+import express from 'express'
+import { authAdmin } from '../middleware/auth.js'
+import * as configService from '../services/configService.js'
+import { extractProfiles, validateSyntax } from '../services/yamlParser.js'
+
 const router = express.Router()
-const { authAdmin } = require('../middleware/auth')
-const configService = require('../services/configService')
-const { validateSyntax } = require('../services/yamlParser')
 
 // Apply admin auth to all routes
 router.use(authAdmin)
+
+/**
+ * GET /api/configs/profiles
+ * Get all profile names defined in the active configuration
+ */
+router.get('/profiles', async (req, res) => {
+  try {
+    const config = await configService.getActiveConfig()
+    if (!config) {
+      return res.json([])
+    }
+    const profiles = extractProfiles(config.content)
+    res.json(profiles)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
 
 /**
  * GET /api/configs
@@ -137,4 +151,4 @@ router.put('/:id/activate', async (req, res) => {
   }
 })
 
-module.exports = router
+export default router

@@ -67,6 +67,7 @@ body {
 
 #app {
   display: flex;
+  width: 100%;
   min-height: 100vh;
 }
 
@@ -89,6 +90,11 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+}
+
+.sidebar-logo img {
+  width: 32px;
+  height: 32px;
 }
 
 .sidebar-logo span {
@@ -120,8 +126,23 @@ body {
   color: var(--color-primary);
 }
 
+.nav-spacer {
+  flex-grow: 1;
+}
+
+.logout-item {
+  margin-top: auto;
+  color: var(--color-text-muted);
+}
+
+.logout-item:hover {
+  color: var(--color-error, #ff4d4f);
+  background: var(--color-error-light, rgba(255, 77, 79, 0.1));
+}
+
 .main-content {
   flex: 1;
+  width: 100%;
   margin-left: 240px;
   padding: var(--space-xl);
   min-height: 100vh;
@@ -512,4 +533,10 @@ textarea.form-input {
 .tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+}
+
+.main-content.full-width {
+  margin-left: 0;
+  width: 100%;
+  padding: 0;
 }

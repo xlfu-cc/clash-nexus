@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="lineArtGradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Line Art Cat Shape -->
+  <path 
+    d="M 120 420 L 120 120 L 120 60 L 200 140 L 312 140 L 392 60 L 392 260 C 392 420 500 350 500 250" 
+    stroke="url(#lineArtGradient)" 
+    stroke-width="32" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Eyes -->
+  <circle cx="190" cy="250" r="20" fill="url(#lineArtGradient)"/>
+  <circle cx="322" cy="250" r="20" fill="url(#lineArtGradient)"/>
+
+  <!-- Mouth -->
+  <path 
+    d="M 226 310 A 30 30 0 0 0 286 310 Z" 
+    fill="url(#lineArtGradient)" 
+  />
+</svg>

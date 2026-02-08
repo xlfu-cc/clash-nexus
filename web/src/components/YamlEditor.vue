@@ -3,19 +3,13 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { EditorState } from '@codemirror/state'
-import {
-  EditorView,
-  keymap,
-  lineNumbers,
-  highlightActiveLineGutter,
-  highlightActiveLine
-} from '@codemirror/view'
+import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language'
+import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 
 export default {
   name: 'YamlEditor',
@@ -59,6 +53,8 @@ export default {
           EditorView.theme({
             '&': {
               height: '400px',
+              width: '100%',
+              height: props.height,
               fontSize: '14px'
             },
             '.cm-scroller': {
@@ -103,6 +99,7 @@ export default {
 
 <style scoped>
 .code-editor {
+  width: 100%;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;

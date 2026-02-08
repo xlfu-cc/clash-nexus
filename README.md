@@ -82,12 +82,12 @@ clash-nexus/
 
 ## 环境变量
 
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| PORT | 服务端口 | 3000 |
-| ADMIN_TOKEN | 管理 API 认证令牌 | - |
-| SUBSCRIBE_TOKEN | 订阅接口认证令牌 | - |
-| DATA_DIR | 数据存储目录 | ./data |
+| 变量名             | 说明          | 默认值    |
+|-----------------|-------------|--------|
+| PORT            | 服务端口        | 3000   |
+| ADMIN_TOKEN     | 管理 API 认证令牌 | -      |
+| SUBSCRIBE_TOKEN | 订阅接口认证令牌    | -      |
+| DATA_DIR        | 数据存储目录      | ./data |
 
 ## License
 

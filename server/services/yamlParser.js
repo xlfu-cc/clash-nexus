@@ -1,16 +1,7 @@
-/**
- * YAML Profile Parser
- * Parses YAML content with profile markers and filters based on target profile
- *
- * Syntax:
- * - Single line: content # @profile: profileName
- * - Block: # @profile: profileName { ... # }
- * - Exclude: # @profile: !profileName
- * - No marker = common (included in all profiles)
- */
+import yaml from 'js-yaml'
 
 // Regex patterns
-const SINGLE_LINE_PATTERN = /#\s*@profile:\s*(!?)(\w+)\s*$/
+const SINGLE_LINE_PATTERN = /^([^#\n]*[^#\s][^#\n]*)\s*#\s*@profile:\s*(!?)(\w+)\s*$/
 const BLOCK_START_PATTERN = /^(\s*)#\s*@profile:\s*(!?)(\w+)\s*\{\s*$/
 const BLOCK_END_PATTERN = /^(\s*)#\s*\}\s*$/
 
@@ -20,7 +11,7 @@ const BLOCK_END_PATTERN = /^(\s*)#\s*\}\s*$/
  * @param {string} targetProfile - Target profile name to filter for
  * @returns {string} - Filtered YAML content
  */
-function parseByProfile(content, targetProfile) {
+export function parseByProfile(content, targetProfile) {
   const lines = content.split('\n')
   const result = []
 
@@ -51,7 +42,7 @@ function parseByProfile(content, targetProfile) {
     // Check for single line marker
     const singleLineMatch = line.match(SINGLE_LINE_PATTERN)
     if (singleLineMatch) {
-      const [fullMatch, exclude, profile] = singleLineMatch
+      const [, content, exclude, profile] = singleLineMatch
       const isExclude = exclude === '!'
 
       // Determine if this line should be included
@@ -60,9 +51,8 @@ function parseByProfile(content, targetProfile) {
         : profile === targetProfile // Include if IS this profile
 
       if (shouldInclude) {
-        // Remove the marker from the line
-        const cleanLine = line.replace(SINGLE_LINE_PATTERN, '').trimEnd()
-        result.push(cleanLine)
+        // Use the content part from the match
+        result.push(content.trimEnd())
       }
       continue
     }
@@ -72,8 +62,8 @@ function parseByProfile(content, targetProfile) {
       // Inside a block - check if the block profile matches
       const currentBlock = blockStack[blockStack.length - 1]
       const shouldInclude = currentBlock.exclude
-        ? currentBlock.profile !== targetProfile
-        : currentBlock.profile === targetProfile
+        ? currentBlock.profile !== targetProfile // Include if NOT this profile
+        : currentBlock.profile === targetProfile // Include if IS this profile
 
       if (shouldInclude) {
         result.push(line)
@@ -90,27 +80,27 @@ function parseByProfile(content, targetProfile) {
 /**
  * Extract all profile names from YAML content
  * @param {string} content - Raw YAML content
- * @returns {string[]} - Array of unique profile names
+ * @returns {Array<{id: string, name: string, description: string}>} - Array of profile objects
  */
-function extractProfiles(content) {
-  const profiles = new Set()
+export function extractProfiles(content) {
+  const profileNames = new Set()
   const lines = content.split('\n')
 
   for (const line of lines) {
     // Check single line markers
     const singleMatch = line.match(SINGLE_LINE_PATTERN)
     if (singleMatch) {
-      profiles.add(singleMatch[2])
+      profileNames.add(singleMatch[3])
     }
 
     // Check block start markers
     const blockMatch = line.match(BLOCK_START_PATTERN)
     if (blockMatch) {
-      profiles.add(blockMatch[3])
+      profileNames.add(blockMatch[3])
     }
   }
 
-  return Array.from(profiles)
+  return Array.from(profileNames)
 }
 
 /**
@@ -118,8 +108,29 @@ function extractProfiles(content) {
  * @param {string} content - YAML content to validate
  * @returns {{ valid: boolean, error?: string }}
  */
-function validateSyntax(content) {
-  const yaml = require('js-yaml')
+export function validateSyntax(content) {
+  const lines = content.split('\n')
+  const stack = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const lineNum = i + 1
+
+    if (BLOCK_START_PATTERN.test(line)) {
+      const match = line.match(BLOCK_START_PATTERN)
+      stack.push({ line: lineNum, profile: match[3] })
+    } else if (BLOCK_END_PATTERN.test(line)) {
+      if (stack.length === 0) {
+        return { valid: false, error: `Row ${lineNum}: detection of redundant closing labels # }` }
+      }
+      stack.pop()
+    }
+  }
+
+  if (stack.length > 0) {
+    const last = stack.pop()
+    return { valid: false, error: `Row ${last.line}: profile block { containing "${last.profile}" is not closed` }
+  }
 
   // First, strip out profile markers for validation
   const cleanContent = content
@@ -134,10 +145,4 @@ function validateSyntax(content) {
   } catch (error) {
     return { valid: false, error: error.message }
   }
-}
-
-module.exports = {
-  parseByProfile,
-  extractProfiles,
-  validateSyntax
 }

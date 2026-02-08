@@ -2,6 +2,7 @@
   "name": "clash-nexus",
   "version": "1.0.0",
   "description": "A lightweight Clash subscription management service",
+  "type": "module",
   "main": "server/index.js",
   "scripts": {
     "dev": "node server/index.js",
@@ -27,6 +28,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "prettier": "^3.7.4"
   },
   "engines": {

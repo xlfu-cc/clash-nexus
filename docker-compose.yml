@@ -10,8 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - ADMIN_TOKEN=${ADMIN_TOKEN:-change-this-admin-token}
-      - SUBSCRIBE_TOKEN=${SUBSCRIBE_TOKEN:-change-this-subscribe-token}
       - DATA_DIR=/app/data
     volumes:
       - ./data:/app/data

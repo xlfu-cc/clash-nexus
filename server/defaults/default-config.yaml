@@ -1,0 +1,57 @@
+# Clash Nexus Configuration Template
+#
+# Profile Markers Guide:
+# ---------------------
+# 1. Single Line:    content # @profile: profile_name
+#    - Included ONLY when the target profile is 'profile_name'.
+#
+# 2. Block:          # @profile: profile_name { ... # }
+#    - Everything between { and } is included ONLY for 'profile_name'.
+#
+# 3. Exclude:        # @profile: !profile_name
+#                    # @profile: !profile_name { ... # }
+#    - Included for EVERY profile EXCEPT 'profile_name'.
+#
+# 4. Common:         No marker
+#    - Included in all profiles and when no profile is specified.
+
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+
+# DNS Configuration
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+# Proxy Groups
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - DIRECT
+
+# Rules
+rules:
+  # Common rules
+  - DOMAIN-SUFFIX,google.com,PROXY
+  - DOMAIN-SUFFIX,github.com,PROXY
+
+  # Home profile only
+  # @profile: home {
+  - DOMAIN-SUFFIX,netflix.com,PROXY
+  - DOMAIN-SUFFIX,youtube.com,PROXY
+  # }
+
+  # Office profile only
+  # @profile: office {
+  - DOMAIN-SUFFIX,company.com,DIRECT
+  # }
+
+  # Fallback rule
+  - MATCH,DIRECT

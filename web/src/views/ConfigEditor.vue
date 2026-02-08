@@ -7,43 +7,39 @@
 
     <!-- Config List -->
     <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">配置列表</h2>
-        <button class="btn btn-primary" @click="showCreateModal = true">+ 新建配置</button>
+      <div v-if="isLoading && configs.length === 0" class="loading-state">
+        <div class="spinner"></div>
+        <p>加载中...</p>
       </div>
 
-      <div v-if="configs.length === 0" class="empty-state">
-        <div class="empty-state-icon">📝</div>
-        <p>暂无配置，点击上方按钮创建</p>
-      </div>
+      <template v-else>
+        <div class="card-header">
+          <h2 class="card-title">配置列表</h2>
+          <button class="btn btn-primary" @click="showCreateModal = true">+ 新建配置</button>
+        </div>
 
-      <div v-else>
-        <div
-          v-for="config in configs"
-          :key="config.id"
-          class="list-item"
-          :class="{ 'is-active': config.isActive }"
-        >
-          <div class="list-item-info">
-            <div class="list-item-title">
-              {{ config.name }}
-              <span v-if="config.isActive" class="badge badge-success">当前激活</span>
+        <div v-if="configs.length === 0" class="empty-state">
+          <div class="empty-state-icon">📝</div>
+          <p>暂无配置，点击上方按钮创建</p>
+        </div>
+
+        <div v-else>
+          <div v-for="config in configs" :key="config.id" class="list-item" :class="{ 'is-active': config.isActive }">
+            <div class="list-item-info">
+              <div class="list-item-title">
+                {{ config.name }}
+                <span v-if="config.isActive" class="badge badge-success">当前激活</span>
+              </div>
+              <div class="list-item-subtitle">更新于 {{ formatDate(config.updatedAt) }}</div>
             </div>
-            <div class="list-item-subtitle">更新于 {{ formatDate(config.updatedAt) }}</div>
-          </div>
-          <div class="list-item-actions">
-            <button class="btn btn-secondary btn-sm" @click="editConfig(config)">编辑</button>
-            <button
-              v-if="!config.isActive"
-              class="btn btn-secondary btn-sm"
-              @click="activateConfig(config.id)"
-            >
-              激活
-            </button>
-            <button class="btn btn-danger btn-sm" @click="deleteConfig(config.id)">删除</button>
+            <div class="list-item-actions">
+              <button class="btn btn-secondary btn-sm" @click="editConfig(config)">编辑</button>
+              <button v-if="!config.isActive" class="btn btn-secondary btn-sm" @click="activateConfig(config.id)">激活</button>
+              <button class="btn btn-danger btn-sm" @click="deleteConfig(config.id)">删除</button>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <!-- Editor Section -->
@@ -58,12 +54,7 @@
 
       <div class="form-group">
         <label class="form-label">配置名称</label>
-        <input
-          type="text"
-          class="form-input"
-          v-model="editingConfig.name"
-          placeholder="输入配置名称"
-        />
+        <input type="text" class="form-input" v-model="editingConfig.name" placeholder="输入配置名称" />
       </div>
 
       <div class="form-group">
@@ -82,12 +73,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">配置名称</label>
-          <input
-            type="text"
-            class="form-input"
-            v-model="newConfig.name"
-            placeholder="例如: 主配置"
-          />
+          <input type="text" class="form-input" v-model="newConfig.name" placeholder="例如: 主配置" />
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showCreateModal = false">取消</button>
@@ -99,7 +85,7 @@
 </template>
 
 <script>
-import { ref, inject, onMounted } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import { configApi } from '../api'
 import YamlEditor from '../components/YamlEditor.vue'
 
@@ -113,10 +99,27 @@ export default {
     const showCreateModal = ref(false)
     const newConfig = ref({ name: '' })
 
-    const loadConfigs = async () => {
+    const isLoading = ref(true)
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+    const loadConfigs = async (options = {}) => {
+      // Support both old signature (retries number) and new object signature
+      const retries = typeof options === 'number' ? options : (options.retries ?? 3)
+      const background = options.background || false
+
+      if (!background) isLoading.value = true
+
       try {
         configs.value = await configApi.list()
+        if (!background) isLoading.value = false
       } catch (error) {
+        if (retries > 0) {
+          console.log(`Failed to load configs, retrying... (${retries} left)`)
+          await sleep(1000)
+          return loadConfigs({ retries: retries - 1, background })
+        }
+        if (!background) isLoading.value = false
         showToast(error.message, 'error')
       }
     }
@@ -140,7 +143,7 @@ export default {
           content: editingConfig.value.content
         })
         showToast('配置已保存')
-        await loadConfigs()
+        await loadConfigs({ background: true })
         editingConfig.value = null
       } catch (error) {
         showToast(error.message, 'error')
@@ -153,7 +156,7 @@ export default {
         showToast('配置已创建')
         showCreateModal.value = false
         newConfig.value = { name: '' }
-        await loadConfigs()
+        await loadConfigs({ background: true })
       } catch (error) {
         showToast(error.message, 'error')
       }
@@ -163,7 +166,7 @@ export default {
       try {
         await configApi.activate(id)
         showToast('配置已激活')
-        await loadConfigs()
+        await loadConfigs({ background: true })
       } catch (error) {
         showToast(error.message, 'error')
       }
@@ -177,7 +180,7 @@ export default {
         if (editingConfig.value?.id === id) {
           editingConfig.value = null
         }
-        await loadConfigs()
+        await loadConfigs({ background: true })
       } catch (error) {
         showToast(error.message, 'error')
       }
@@ -191,6 +194,7 @@ export default {
 
     return {
       configs,
+      isLoading,
       editingConfig,
       showCreateModal,
       newConfig,
@@ -221,5 +225,30 @@ export default {
   background: var(--color-bg-tertiary);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--color-bg-tertiary);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-md);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

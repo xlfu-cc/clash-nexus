@@ -70,6 +70,10 @@ samp {
   font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
 }
 
+.font-mono {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+}
+
 #app {
   display: flex;
   width: 100%;
@@ -482,10 +486,6 @@ textarea.form-input {
   overflow: hidden;
 }
 
-.cm-editor {
-  font-size: 0.875rem;
-}
-
 .cm-editor .cm-content {
   padding: var(--space-md);
 }
@@ -627,7 +627,7 @@ textarea.form-input {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);
-  font-family: monospace;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
   word-break: break-all;
   margin-bottom: var(--space-md);
 }

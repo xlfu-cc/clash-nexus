@@ -26,7 +26,7 @@
       <div class="form-group">
         <label class="form-label">订阅 Token</label>
         <div class="flex gap-sm">
-          <input type="text" class="form-input" v-model="token" readonly placeholder="加载中..." />
+          <input type="text" class="form-input font-mono" v-model="token" readonly placeholder="加载中..." />
           <button class="btn btn-secondary" @click="refreshToken" title="刷新 Token">🔄</button>
         </div>
         <p class="form-hint">Token 由系统自动生成，刷新后旧链接将失效</p>

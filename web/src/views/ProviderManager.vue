@@ -398,7 +398,7 @@ export default {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text);
-  font-family: monospace;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
 }
 
 .badge-type {
@@ -441,7 +441,7 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: monospace;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
 }
 
 .btn-copy-sm {
@@ -516,7 +516,7 @@ export default {
 
 .code-example pre {
   margin: 0;
-  font-family: monospace;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--color-text-secondary);

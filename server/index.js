@@ -33,6 +33,11 @@ app.use('/api/configs', configRoutes)
 app.use('/api/providers', providerRoutes)
 app.use('/api/auth', authRoutes)
 
+// Health check endpoint (must be before SPA catch-all)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 // Serve static files (Vue frontend) in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../web/dist')))
@@ -43,10 +48,6 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
 
 // Error handling middleware
 app.use((err, req, res, next) => {

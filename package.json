@@ -1,6 +1,6 @@
 {
   "name": "clash-nexus",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A lightweight Clash subscription management service",
   "type": "module",
   "main": "server/index.js",

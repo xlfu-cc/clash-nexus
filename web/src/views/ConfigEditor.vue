@@ -43,7 +43,7 @@
     </div>
 
     <!-- Editor Section -->
-    <div v-if="editingConfig" class="card">
+    <div v-if="editingConfig" class="card config-editor-card">
       <div class="card-header">
         <h2 class="card-title">编辑配置: {{ editingConfig.name }}</h2>
         <div class="flex gap-sm">
@@ -236,6 +236,16 @@ export default {
 <style scoped>
 .is-active {
   border-color: var(--color-success);
+}
+
+.config-editor-card > .card-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: calc(-1 * var(--space-lg)) calc(-1 * var(--space-lg)) var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .editor-hint {

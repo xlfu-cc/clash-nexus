@@ -52,7 +52,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Health check (wget is okay running as root since it reads public port)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server/index.js"]

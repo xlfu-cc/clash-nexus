@@ -59,7 +59,17 @@
 
       <div class="form-group">
         <label class="form-label">配置内容 (YAML)</label>
-        <div class="editor-hint">提示: 使用 <code># @profile: xxx</code> 标记特定场景的配置</div>
+        <div class="editor-hint">
+          <span
+            >提示: 使用 <code># @profile: xxx</code> 标记场景配置；在 <code>proxy-groups</code> 中可使用 <code>use: [节点源名称]</code> 引用托管节点源。</span
+          >
+          <span v-if="availableProviders.length > 0" class="providers-hint">
+            当前可用节点源:
+            <code v-for="p in availableProviders" :key="p.id" class="provider-tag" :title="'点击复制 ' + p.name" @click="copyProviderTag(p.name)">{{
+              p.name
+            }}</code>
+          </span>
+        </div>
         <YamlEditor v-model="editingConfig.content" />
       </div>
     </div>
@@ -86,7 +96,8 @@
 
 <script>
 import { inject, onMounted, ref } from 'vue'
-import { configApi } from '../api'
+import { configApi, providerApi } from '../api'
+import { copyToClipboard } from '../utils/clipboard'
 import YamlEditor from '../components/YamlEditor.vue'
 
 export default {
@@ -98,6 +109,7 @@ export default {
     const editingConfig = ref(null)
     const showCreateModal = ref(false)
     const newConfig = ref({ name: '' })
+    const availableProviders = ref([])
 
     const isLoading = ref(true)
 
@@ -111,7 +123,9 @@ export default {
       if (!background) isLoading.value = true
 
       try {
-        configs.value = await configApi.list()
+        const [configList, providerList] = await Promise.all([configApi.list(), providerApi.list().catch(() => [])])
+        configs.value = configList
+        availableProviders.value = providerList
         if (!background) isLoading.value = false
       } catch (error) {
         if (retries > 0) {
@@ -186,6 +200,13 @@ export default {
       }
     }
 
+    const copyProviderTag = async name => {
+      const success = await copyToClipboard(name)
+      if (success) {
+        showToast(`已复制节点源名称 "${name}"`)
+      }
+    }
+
     const formatDate = dateStr => {
       return new Date(dateStr).toLocaleString('zh-CN')
     }
@@ -198,12 +219,14 @@ export default {
       editingConfig,
       showCreateModal,
       newConfig,
+      availableProviders,
       editConfig,
       cancelEdit,
       saveConfig,
       createConfig,
       activateConfig,
       deleteConfig,
+      copyProviderTag,
       formatDate
     }
   }
@@ -219,12 +242,35 @@ export default {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-bottom: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .editor-hint code {
   background: var(--color-bg-tertiary);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+}
+
+.providers-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.provider-tag {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: var(--color-primary) !important;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.provider-tag:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .loading-state {

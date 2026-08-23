@@ -14,7 +14,8 @@ export const CACHE_DIR = path.join(DATA_DIR, 'cache')
 // File paths
 const FILES = {
   configs: path.join(DATA_DIR, 'configs.json'),
-  settings: path.join(DATA_DIR, 'settings.json')
+  settings: path.join(DATA_DIR, 'settings.json'),
+  providers: path.join(DATA_DIR, 'providers.json')
 }
 
 /**
@@ -41,6 +42,9 @@ export async function initDataDir() {
           updatedAt: new Date().toISOString()
         }
       ]
+    },
+    providers: {
+      providers: []
     },
     settings: {
       admin: {
@@ -193,6 +197,18 @@ export async function getCacheTime(providerId) {
     return stats.mtime
   } catch {
     return null
+  }
+}
+
+/**
+ * Delete provider cache file
+ */
+export async function deleteCache(providerId) {
+  const cachePath = path.join(CACHE_DIR, `${providerId}.yaml`)
+  try {
+    await fs.unlink(cachePath)
+  } catch {
+    // Ignore error if file does not exist
   }
 }
 

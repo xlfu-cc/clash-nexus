@@ -5,6 +5,7 @@ import './style.css'
 
 // Views
 import ConfigEditor from './views/ConfigEditor.vue'
+import ProviderManager from './views/ProviderManager.vue'
 import Subscribe from './views/Subscribe.vue'
 import Login from './views/Login.vue'
 import Settings from './views/Settings.vue'
@@ -28,6 +29,12 @@ const router = createRouter({
       path: '/configs',
       name: 'configs',
       component: ConfigEditor,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/providers',
+      name: 'providers',
+      component: ProviderManager,
       meta: { requiresAuth: true }
     },
     {

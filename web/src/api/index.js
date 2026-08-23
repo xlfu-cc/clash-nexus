@@ -160,6 +160,50 @@ export const configApi = {
   }
 }
 
+// ============ Provider API ============
+
+export const providerApi = {
+  async list() {
+    return request('/providers')
+  },
+
+  async get(id) {
+    return request(`/providers/${id}`)
+  },
+
+  async create(data) {
+    return request('/providers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  async update(id, data) {
+    return request(`/providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  },
+
+  async delete(id) {
+    return request(`/providers/${id}`, {
+      method: 'DELETE'
+    })
+  },
+
+  async refresh(id) {
+    return request(`/providers/${id}/refresh`, {
+      method: 'POST'
+    })
+  },
+
+  async refreshAll() {
+    return request('/providers/refresh', {
+      method: 'POST'
+    })
+  }
+}
+
 // ============ Profile API ============
 
 export const profileApi = {
@@ -183,13 +227,16 @@ export const subscribeApi = {
 
 // ============ Subscribe URL Generator ============
 
-export function generateSubscribeUrl(profile = '', token = '') {
+export function generateSubscribeUrl(profile = '', token = '', forceRefresh = false) {
   const baseUrl = window.location.origin
   const path = `/api/subscribe/${token}`
   const params = new URLSearchParams()
 
   if (profile) {
     params.set('profile', profile)
+  }
+  if (forceRefresh) {
+    params.set('refresh', '1')
   }
 
   const queryString = params.toString()

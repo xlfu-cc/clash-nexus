@@ -7,6 +7,7 @@ import { DATA_DIR, initDataDir } from './utils/fileStore.js'
 // Import routes
 import subscribeRoutes from './routes/subscribe.js'
 import configRoutes from './routes/config.js'
+import providerRoutes from './routes/provider.js'
 import authRoutes from './routes/auth.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -29,6 +30,7 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/subscribe', subscribeRoutes)
 app.use('/api/configs', configRoutes)
+app.use('/api/providers', providerRoutes)
 app.use('/api/auth', authRoutes)
 
 // Serve static files (Vue frontend) in production

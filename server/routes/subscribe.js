@@ -37,14 +37,19 @@ router.post('/token/rotate', authAdmin, async (req, res) => {
  * Get subscription content for Clash
  * Query params:
  *   - profile: Profile name (optional)
+ *   - refresh / force: Force refresh providers (optional, e.g. ?refresh=1)
  */
 router.get('/:token', authSubscribe, async (req, res) => {
   try {
-    const { profile } = req.query
-    const ip = req.ip || req.connection.remoteAddress
-    logger.info(`Subscription request: profile=${profile || 'default'} from=${ip}`)
+    const { profile, refresh, force, forceRefresh } = req.query
+    const shouldForceRefresh = refresh === '1' || refresh === 'true' || force === '1' || force === 'true' || forceRefresh === '1' || forceRefresh === 'true'
 
-    const content = await subscribeService.generateSubscription(profile)
+    const ip = req.ip || req.connection.remoteAddress
+    logger.info(`Subscription request: profile=${profile || 'default'} forceRefresh=${shouldForceRefresh} from=${ip}`)
+
+    const content = await subscribeService.generateSubscription(profile, {
+      forceRefresh: shouldForceRefresh
+    })
 
     res.setHeader('Content-Type', 'text/yaml; charset=utf-8')
     res.setHeader('Content-Disposition', 'inline; filename="clash-config.yaml"')

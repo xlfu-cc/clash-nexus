@@ -11,6 +11,7 @@
       </div>
       <nav>
         <router-link to="/configs" class="nav-item" :class="{ active: $route.path === '/configs' }"> 📝 配置管理 </router-link>
+        <router-link to="/providers" class="nav-item" :class="{ active: $route.path === '/providers' }"> 📦 节点源管理 </router-link>
         <router-link to="/subscribe" class="nav-item" :class="{ active: $route.path === '/subscribe' }"> 📡 订阅链接 </router-link>
         <router-link to="/settings" class="nav-item" :class="{ active: $route.path === '/settings' }"> ⚙️ 系统设置 </router-link>
         <div class="nav-spacer"></div>

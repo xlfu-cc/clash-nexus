@@ -2,11 +2,18 @@
   <div class="subscribe-page">
     <div class="page-header">
       <h1 class="page-title">订阅链接</h1>
-      <p class="page-description">复制订阅链接到 Clash 客户端使用</p>
+      <p class="page-description">复制订阅链接到 Clash 客户端使用，支持携带参数强制刷新节点源</p>
     </div>
 
     <div class="card">
-      <h2 class="card-title">生成订阅链接</h2>
+      <div class="card-header">
+        <h2 class="card-title">生成订阅链接</h2>
+        <button class="btn btn-secondary btn-sm" :disabled="refreshingProviders" @click="handleRefreshAllProviders">
+          <span v-if="refreshingProviders" class="btn-spinner"></span>
+          <span v-else>🔄</span>
+          立即更新后台节点源
+        </button>
+      </div>
 
       <div class="form-group">
         <label class="form-label">选择 Profile</label>
@@ -25,10 +32,18 @@
         <p class="form-hint">Token 由系统自动生成，刷新后旧链接将失效</p>
       </div>
 
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="forceRefresh" />
+          <span>强制刷新节点源缓存 (URL 附带 <code>&refresh=1</code> 参数)</span>
+        </label>
+        <p class="form-hint">勾选后，Clash 客户端每次拉取订阅都会跳过本地缓存，强制从远程上游拉取最新节点</p>
+      </div>
+
       <div class="subscribe-url-section">
         <label class="form-label">订阅链接</label>
         <div class="subscribe-url">{{ subscribeUrl }}</div>
-        <div class="flex gap-sm">
+        <div class="flex gap-sm flex-wrap">
           <button class="btn btn-primary" @click="copyUrl">📋 复制链接</button>
           <button class="btn btn-secondary" @click="openPreview">👁️ 预览配置</button>
         </div>
@@ -38,13 +53,16 @@
     <!-- Quick Links -->
     <div class="card">
       <h2 class="card-title">快速链接</h2>
-      <p class="text-muted mb-md">以下是各 Profile 的订阅链接（需要替换 Token）：</p>
+      <p class="text-muted mb-md">以下是各 Profile 的订阅链接{{ forceRefresh ? '（已包含强制刷新参数）' : '' }}：</p>
 
       <div v-for="name in profiles" :key="name" class="quick-link-item">
         <div class="quick-link-info">
           <code>{{ name }}</code>
+          <span v-if="forceRefresh" class="badge badge-warning">强制刷新</span>
         </div>
-        <button class="copy-btn" @click="copyProfileUrl(name)">复制</button>
+        <div class="flex gap-sm">
+          <button class="copy-btn" @click="copyProfileUrl(name)">复制链接</button>
+        </div>
       </div>
 
       <div v-if="profiles.length === 0" class="empty-state">
@@ -60,7 +78,7 @@
         <div class="step-number">1</div>
         <div class="step-content">
           <h4>复制订阅链接</h4>
-          <p>选择对应的 Profile，填入 Token，复制生成的订阅链接</p>
+          <p>选择对应的 Profile，根据需要勾选是否强制刷新，复制生成的订阅链接</p>
         </div>
       </div>
 
@@ -75,8 +93,8 @@
       <div class="usage-step">
         <div class="step-number">3</div>
         <div class="step-content">
-          <h4>更新配置</h4>
-          <p>Clash 会自动根据订阅链接更新配置内容</p>
+          <h4>更新与刷新</h4>
+          <p>若节点有变动，可直接在后台「节点源管理」点击刷新，或使用带 <code>&refresh=1</code> 的订阅链接直接更新</p>
         </div>
       </div>
     </div>
@@ -85,7 +103,7 @@
 
 <script>
 import { computed, inject, onMounted, ref } from 'vue'
-import { generateSubscribeUrl, profileApi, subscribeApi } from '../api'
+import { generateSubscribeUrl, profileApi, subscribeApi, providerApi } from '../api'
 import { copyToClipboard } from '../utils/clipboard'
 
 export default {
@@ -95,9 +113,11 @@ export default {
     const profiles = ref([])
     const selectedProfile = ref('')
     const token = ref('')
+    const forceRefresh = ref(false)
+    const refreshingProviders = ref(false)
 
     const subscribeUrl = computed(() => {
-      return generateSubscribeUrl(selectedProfile.value, token.value)
+      return generateSubscribeUrl(selectedProfile.value, token.value, forceRefresh.value)
     })
 
     const loadData = async () => {
@@ -119,6 +139,30 @@ export default {
         showToast('订阅 Token 已刷新')
       } catch (error) {
         showToast('Token 刷新失败', 'error')
+      }
+    }
+
+    const handleRefreshAllProviders = async () => {
+      refreshingProviders.value = true
+      try {
+        const res = await providerApi.refreshAll()
+        let successCount = 0
+        let totalProxies = 0
+
+        if (Array.isArray(res.results)) {
+          for (const item of res.results) {
+            if (item.success) {
+              successCount++
+              totalProxies += item.proxyCount || 0
+            }
+          }
+        }
+
+        showToast(`节点源更新完成: ${successCount} 个成功，共 ${totalProxies} 个节点`)
+      } catch (error) {
+        showToast(error.message, 'error')
+      } finally {
+        refreshingProviders.value = false
       }
     }
 
@@ -145,7 +189,7 @@ export default {
         showToast('数据尚未加载完成', 'warn')
         return
       }
-      const url = generateSubscribeUrl(profileName, token.value)
+      const url = generateSubscribeUrl(profileName, token.value, forceRefresh.value)
       try {
         const success = await copyToClipboard(url)
         if (success) {
@@ -169,11 +213,14 @@ export default {
       profiles,
       selectedProfile,
       token,
+      forceRefresh,
+      refreshingProviders,
       subscribeUrl,
       copyUrl,
       copyProfileUrl,
       openPreview,
-      refreshToken
+      refreshToken,
+      handleRefreshAllProviders
     }
   }
 }
@@ -184,6 +231,30 @@ export default {
   margin-top: var(--space-lg);
   padding-top: var(--space-lg);
   border-top: 1px solid var(--color-border);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  user-select: none;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.checkbox-label code {
+  background: var(--color-bg-tertiary);
+  color: var(--color-warning);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
 }
 
 .form-hint {
@@ -242,5 +313,22 @@ export default {
 .step-content p {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 4px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

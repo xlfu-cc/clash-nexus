@@ -10,6 +10,7 @@
     "dev:web": "cd web && npm run dev",
     "build:web": "cd web && npm run build",
     "start": "NODE_ENV=production node server/index.js",
+    "test": "node test/provider.test.js && node test/api.test.js",
     "format": "prettier --write \"server/**/*.js\" \"web/src/**/*.{js,vue,css}\"",
     "format:check": "prettier --check \"server/**/*.js\" \"web/src/**/*.{js,vue,css}\""
   },

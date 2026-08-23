@@ -402,7 +402,7 @@ export default {
 }
 
 .badge-type {
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(34, 184, 207, 0.15);
   color: var(--color-primary);
   text-transform: uppercase;
 }

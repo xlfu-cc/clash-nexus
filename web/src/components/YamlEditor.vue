@@ -8,8 +8,17 @@ import { EditorState } from '@codemirror/state'
 import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { yaml } from '@codemirror/lang-yaml'
-import { oneDark } from '@codemirror/theme-one-dark'
-import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { bracketMatching, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
+
+const yamlHighlighting = HighlightStyle.define([
+  { tag: tags.keyword, color: '#7dd3fc' },
+  { tag: [tags.atom, tags.bool, tags.number], color: '#fbbf24' },
+  { tag: tags.string, color: '#86efac' },
+  { tag: tags.propertyName, color: '#93c5fd' },
+  { tag: tags.comment, color: '#718096', fontStyle: 'italic' },
+  { tag: tags.punctuation, color: '#cbd5e1' }
+])
 
 export default {
   name: 'YamlEditor',
@@ -21,6 +30,10 @@ export default {
     readonly: {
       type: Boolean,
       default: false
+    },
+    height: {
+      type: String,
+      default: 'min(58vh, 640px)'
     }
   },
   emits: ['update:modelValue'],
@@ -44,21 +57,41 @@ export default {
           history(),
           bracketMatching(),
           yaml(),
-          oneDark,
-          syntaxHighlighting(defaultHighlightStyle),
+          syntaxHighlighting(yamlHighlighting),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           updateListener,
           EditorView.lineWrapping,
           EditorState.readOnly.of(props.readonly),
           EditorView.theme({
             '&': {
-              height: '400px',
               width: '100%',
               height: props.height,
-              fontSize: '14px'
+              color: '#dce5f0',
+              backgroundColor: '#12161b',
+              fontFamily: "'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace",
+              fontSize: '10px'
             },
             '.cm-scroller': {
-              overflow: 'auto'
+              overflow: 'auto',
+              fontFamily: "'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace"
+            },
+            '.cm-gutters': {
+              color: '#718096',
+              backgroundColor: '#171c22',
+              borderRight: '1px solid #2d3744'
+            },
+            '.cm-activeLine': {
+              backgroundColor: '#1d2731'
+            },
+            '.cm-activeLineGutter': {
+              backgroundColor: '#17363e',
+              color: '#a5f3fc'
+            },
+            '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
+              backgroundColor: '#1e4b58'
+            },
+            '.cm-cursor, .cm-dropCursor': {
+              borderLeftColor: '#22b8cf'
             }
           })
         ]

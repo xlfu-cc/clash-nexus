@@ -94,7 +94,7 @@ export default {
 .logo-text {
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--color-primary), #a855f7);
+  background: linear-gradient(135deg, #e6edf5, var(--color-primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

@@ -272,7 +272,7 @@ export default {
 }
 
 .provider-tag {
-  background: rgba(99, 102, 241, 0.15) !important;
+  background: rgba(34, 184, 207, 0.15) !important;
   color: var(--color-primary) !important;
   cursor: pointer;
   transition: opacity 0.2s ease;
